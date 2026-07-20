@@ -1,0 +1,10 @@
+# Model weights are too large for git — download/generate via Makefile targets
+*.safetensors
+*.bin
+*.pt
+*.onnx
+*.npy
+*.mlpackage
+*.json
+!.gitignore
+!.gitkeep

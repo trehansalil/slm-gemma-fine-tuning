@@ -1,0 +1,16 @@
+/Users/saliltrehan/Documents/Python_n_R/Personal/slm-engineering
+
+  here is the path in which you can find details about my modal account and the finetuning dataset.
+
+  Now I want to fine-tune a gemma model but I am still considering which one.
+
+  Can you refer to this website and let me know which gemma model can we fine-tune in like 10 mins?
+
+
+this finetuning data is already present on modal.
+
+however, the tokenization of fine-tuning data has to be done separately by you
+Why? Because my tokenizer is only a 16,000-token vocabulary. 
+
+
+  https://slm-finetune-pretrained.vercel.app/

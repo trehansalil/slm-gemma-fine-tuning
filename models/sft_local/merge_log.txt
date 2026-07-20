@@ -1,0 +1,9 @@
+python gemma2b/merge_adapter.py --adapter models/sft_local/adapter --output models/sft_local/merged --base models/base 
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading base model: models/base...
+Loading weights:   0%|          | 0/288 [00:00<?, ?it/s]Loading weights: 100%|██████████| 288/288 [00:00<00:00, 6948.65it/s]
+Loading adapter from models/sft_local/adapter...
+Merging adapter into base model...
+Saving merged model to models/sft_local/merged...
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:11<00:00, 12.00s/it]Writing model shards: 100%|██████████| 1/1 [00:11<00:00, 12.00s/it]
+Done! Merged model: 2614.3M params saved to models/sft_local/merged
