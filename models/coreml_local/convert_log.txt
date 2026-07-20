@@ -1,0 +1,28 @@
+python gemma2b/convert_coreml.py --model models/sft_local/merged --output models/coreml_local 
+scikit-learn version 1.7.1 is not supported. Minimum required version: 0.17. Maximum required version: 1.5.1. Disabling scikit-learn conversion API.
+TensorFlow version 2.19.0 has not been tested with coremltools. You may run into unexpected errors. TensorFlow 2.12.0 is the most recent version that has been tested.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading model from models/sft_local/merged (eager attention)...
+Loading weights:   0%|          | 0/288 [00:00<?, ?it/s]Loading weights: 100%|██████████| 288/288 [00:00<00:00, 30827.88it/s]
+Tuple detected at graph output. This will be flattened in the converted model.
+Model: 2614.3M params, 26 layers, 8q/4kv heads, head_dim=256
+Building KV-cached decode model...
+Verifying correctness...
+  Verification (seq_len=16):
+    Max logit diff: 0.000080
+    Top token - ref: 107, kv: 107 OK
+Tracing...
+Converting to CoreML...
+Converting PyTorch Frontend ==> MIL Ops:   0%|          | 0/6779 [00:00<?, ? ops/s]Core ML embedding (gather) layer does not support any inputs besides the weights and indices. Those given will be ignored.
+Converting PyTorch Frontend ==> MIL Ops:  15%|█▍        | 987/6779 [00:00<00:00, 9863.28 ops/s]Converting PyTorch Frontend ==> MIL Ops:  30%|██▉       | 2017/6779 [00:00<00:00, 10116.61 ops/s]Converting PyTorch Frontend ==> MIL Ops:  45%|████▌     | 3051/6779 [00:00<00:00, 10217.26 ops/s]Converting PyTorch Frontend ==> MIL Ops:  60%|██████    | 4086/6779 [00:00<00:00, 10266.57 ops/s]Converting PyTorch Frontend ==> MIL Ops:  76%|███████▌  | 5123/6779 [00:00<00:00, 10298.73 ops/s]Converting PyTorch Frontend ==> MIL Ops:  91%|█████████ | 6168/6779 [00:00<00:00, 10349.82 ops/s]Converting PyTorch Frontend ==> MIL Ops: 100%|█████████▉| 6777/6779 [00:00<00:00, 8745.85 ops/s] 
+Running MIL frontend_pytorch pipeline:   0%|          | 0/5 [00:00<?, ? passes/s]Running MIL frontend_pytorch pipeline:  60%|██████    | 3/5 [00:00<00:00, 22.54 passes/s]Running MIL frontend_pytorch pipeline: 100%|██████████| 5/5 [00:00<00:00, 24.51 passes/s]
+Running MIL default pipeline:   0%|          | 0/95 [00:00<?, ? passes/s]Running MIL default pipeline:   3%|▎         | 3/95 [00:00<00:03, 24.82 passes/s]Running MIL default pipeline:   6%|▋         | 6/95 [00:00<00:03, 23.71 passes/s]Running MIL default pipeline:  11%|█         | 10/95 [00:00<00:03, 27.05 passes/s]Running MIL default pipeline:  14%|█▎        | 13/95 [00:00<00:03, 25.28 passes/s]Running MIL default pipeline:  18%|█▊        | 17/95 [00:00<00:03, 25.90 passes/s]Running MIL default pipeline:  21%|██        | 20/95 [00:00<00:02, 26.98 passes/s]Running MIL default pipeline:  24%|██▍       | 23/95 [00:00<00:02, 26.25 passes/s]Running MIL default pipeline:  28%|██▊       | 27/95 [00:01<00:02, 28.11 passes/s]Running MIL default pipeline:  33%|███▎      | 31/95 [00:01<00:02, 29.60 passes/s]Running MIL default pipeline:  36%|███▌      | 34/95 [00:02<00:06,  9.17 passes/s]Running MIL default pipeline:  39%|███▉      | 37/95 [00:02<00:05, 11.35 passes/s]Running MIL default pipeline:  42%|████▏     | 40/95 [00:02<00:04, 12.75 passes/s]Running MIL default pipeline:  45%|████▌     | 43/95 [00:02<00:03, 15.26 passes/s]Running MIL default pipeline:  48%|████▊     | 46/95 [00:02<00:02, 17.72 passes/s]Running MIL default pipeline:  52%|█████▏    | 49/95 [00:02<00:02, 18.97 passes/s]Running MIL default pipeline:  55%|█████▍    | 52/95 [00:02<00:02, 20.51 passes/s]Running MIL default pipeline:  58%|█████▊    | 55/95 [00:02<00:01, 22.61 passes/s]Running MIL default pipeline:  61%|██████    | 58/95 [00:03<00:04,  7.90 passes/s]Running MIL default pipeline:  61%|██████    | 58/95 [00:18<00:04,  7.90 passes/s]Running MIL default pipeline:  62%|██████▏   | 59/95 [00:29<01:57,  3.26s/ passes]Running MIL default pipeline:  64%|██████▍   | 61/95 [00:29<01:22,  2.43s/ passes]Running MIL default pipeline:  66%|██████▋   | 63/95 [00:29<00:57,  1.80s/ passes]Running MIL default pipeline:  68%|██████▊   | 65/95 [00:29<00:40,  1.34s/ passes]Running MIL default pipeline:  72%|███████▏  | 68/95 [00:30<00:22,  1.18 passes/s]Running MIL default pipeline:  76%|███████▌  | 72/95 [00:30<00:11,  1.97 passes/s]Running MIL default pipeline:  80%|████████  | 76/95 [00:30<00:06,  3.04 passes/s]Running MIL default pipeline:  84%|████████▍ | 80/95 [00:30<00:03,  4.45 passes/s]Running MIL default pipeline:  88%|████████▊ | 84/95 [00:30<00:01,  6.25 passes/s]Running MIL default pipeline:  93%|█████████▎| 88/95 [00:30<00:00,  8.49 passes/s]Running MIL default pipeline:  97%|█████████▋| 92/95 [00:33<00:00,  3.14 passes/s]Running MIL default pipeline: 100%|██████████| 95/95 [00:33<00:00,  3.95 passes/s]Running MIL default pipeline: 100%|██████████| 95/95 [00:33<00:00,  2.81 passes/s]
+Running MIL backend_mlprogram pipeline:   0%|          | 0/12 [00:00<?, ? passes/s]Running MIL backend_mlprogram pipeline:  33%|███▎      | 4/12 [00:00<00:00, 36.53 passes/s]Running MIL backend_mlprogram pipeline:  67%|██████▋   | 8/12 [00:00<00:00, 35.91 passes/s]Running MIL backend_mlprogram pipeline: 100%|██████████| 12/12 [00:00<00:00, 36.40 passes/s]Running MIL backend_mlprogram pipeline: 100%|██████████| 12/12 [00:00<00:00, 36.32 passes/s]
+Saving to models/coreml_local/gemma2-2b-sft.mlpackage...
+Saving rotary embeddings and causal mask...
+
+Done! CoreML model: models/coreml_local/gemma2-2b-sft.mlpackage (5229.9 MB)
+  KV cache shape: [26, 4, 1024, 256]
+  Cache memory: 109.1 MB
+
+To run inference: python gemma2b/chat_coreml.py

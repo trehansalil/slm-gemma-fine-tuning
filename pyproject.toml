@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gemma2b"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "torch",
+    "transformers",
+    "peft",
+    "bitsandbytes",
+    "accelerate",
+    "numpy",
+    "hf-transfer>=0.1.9",
+    "coremltools>=9.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["gemma2b*"]

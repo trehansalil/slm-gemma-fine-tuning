@@ -1,0 +1,8 @@
+torch
+transformers
+peft
+bitsandbytes
+accelerate
+numpy
+hf-transfer>=0.1.9
+coremltools>=9.0

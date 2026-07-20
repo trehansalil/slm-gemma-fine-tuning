@@ -1,0 +1,144 @@
+Device: mps
+Base model: models/base
+Loaded 6657 tokenized examples
+Train: 6325, Val: 332
+Loading models/base...
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/288 [00:00<?, ?it/s]Loading weights: 100%|██████████| 288/288 [00:00<00:00, 6445.85it/s]
+Trainable: 20,766,720 / 2,635,108,608 (0.79%)
+
+Training: epochs 1 -> 3, 2370 steps, batch=1x8, lr=0.0002
+Starting val_loss=2.7818 ppl=16.15
+step    20/2370 | train_loss 2.4176 | val_loss 2.1929 | lr 3.80e-05 | 6.31s/step | 2.1min
+step    40/2370 | train_loss 1.9662 | val_loss 1.9053 | lr 7.80e-05 | 6.20s/step | 4.2min
+step    60/2370 | train_loss 1.6668 | val_loss 1.8508 | lr 1.18e-04 | 5.95s/step | 6.2min
+step    80/2370 | train_loss 1.6525 | val_loss 1.8198 | lr 1.58e-04 | 5.90s/step | 8.1min
+step   100/2370 | train_loss 1.6116 | val_loss 1.8100 | lr 1.98e-04 | 5.74s/step | 10.0min
+step   120/2370 | train_loss 1.7303 | val_loss 1.8008 | lr 2.00e-04 | 5.82s/step | 12.0min
+step   140/2370 | train_loss 1.6749 | val_loss 1.7734 | lr 2.00e-04 | 5.92s/step | 13.9min
+step   160/2370 | train_loss 1.6308 | val_loss 1.7593 | lr 2.00e-04 | 5.96s/step | 15.9min
+step   180/2370 | train_loss 1.7439 | val_loss 1.7475 | lr 1.99e-04 | 5.82s/step | 17.9min
+step   200/2370 | train_loss 1.6778 | val_loss 1.7529 | lr 1.99e-04 | 5.85s/step | 19.8min
+step   220/2370 | train_loss 1.5152 | val_loss 1.7480 | lr 1.99e-04 | 5.84s/step | 21.8min
+step   240/2370 | train_loss 1.7272 | val_loss 1.7396 | lr 1.98e-04 | 5.84s/step | 23.7min
+step   260/2370 | train_loss 1.6530 | val_loss 1.7403 | lr 1.98e-04 | 5.97s/step | 25.7min
+step   280/2370 | train_loss 1.6582 | val_loss 1.7462 | lr 1.97e-04 | 5.74s/step | 27.6min
+step   300/2370 | train_loss 1.5797 | val_loss 1.7412 | lr 1.97e-04 | 5.80s/step | 29.6min
+step   320/2370 | train_loss 1.6867 | val_loss 1.7362 | lr 1.96e-04 | 5.94s/step | 31.5min
+step   340/2370 | train_loss 1.6506 | val_loss 1.7103 | lr 1.95e-04 | 5.84s/step | 33.5min
+step   360/2370 | train_loss 1.6688 | val_loss 1.7228 | lr 1.94e-04 | 5.83s/step | 35.4min
+step   380/2370 | train_loss 1.6572 | val_loss 1.7177 | lr 1.93e-04 | 5.87s/step | 37.4min
+step   400/2370 | train_loss 1.4960 | val_loss 1.7100 | lr 1.92e-04 | 5.84s/step | 39.3min
+step   420/2370 | train_loss 1.6554 | val_loss 1.7087 | lr 1.91e-04 | 5.85s/step | 41.3min
+step   440/2370 | train_loss 1.6733 | val_loss 1.7190 | lr 1.90e-04 | 5.89s/step | 43.2min
+step   460/2370 | train_loss 1.5283 | val_loss 1.7204 | lr 1.89e-04 | 5.84s/step | 45.2min
+step   480/2370 | train_loss 1.5044 | val_loss 1.6993 | lr 1.88e-04 | 5.73s/step | 47.1min
+step   500/2370 | train_loss 1.5338 | val_loss 1.6952 | lr 1.87e-04 | 5.91s/step | 49.1min
+step   520/2370 | train_loss 1.5790 | val_loss 1.7034 | lr 1.85e-04 | 5.84s/step | 51.0min
+step   540/2370 | train_loss 1.5440 | val_loss 1.7032 | lr 1.84e-04 | 5.92s/step | 53.0min
+step   560/2370 | train_loss 1.6599 | val_loss 1.7112 | lr 1.82e-04 | 5.89s/step | 54.9min
+step   580/2370 | train_loss 1.6188 | val_loss 1.7098 | lr 1.81e-04 | 5.82s/step | 56.9min
+step   600/2370 | train_loss 1.5641 | val_loss 1.6884 | lr 1.79e-04 | 5.76s/step | 58.8min
+step   620/2370 | train_loss 1.5912 | val_loss 1.6921 | lr 1.78e-04 | 5.85s/step | 60.8min
+step   640/2370 | train_loss 1.5258 | val_loss 1.6850 | lr 1.76e-04 | 5.87s/step | 62.7min
+step   660/2370 | train_loss 1.5339 | val_loss 1.6820 | lr 1.74e-04 | 6.35s/step | 64.8min
+step   680/2370 | train_loss 1.6285 | val_loss 1.6869 | lr 1.73e-04 | 6.07s/step | 66.9min
+step   700/2370 | train_loss 1.4804 | val_loss 1.6902 | lr 1.71e-04 | 6.10s/step | 68.9min
+step   720/2370 | train_loss 1.5898 | val_loss 1.6877 | lr 1.69e-04 | 6.11s/step | 70.9min
+step   740/2370 | train_loss 1.6480 | val_loss 1.6802 | lr 1.67e-04 | 6.21s/step | 73.0min
+step   760/2370 | train_loss 1.5402 | val_loss 1.6790 | lr 1.65e-04 | 6.03s/step | 75.0min
+step   780/2370 | train_loss 1.5132 | val_loss 1.6725 | lr 1.63e-04 | 7.07s/step | 77.4min
+  [epoch 1] train_loss=1.6408 val_loss=1.6730 ppl=5.33 + | 79.0min
+  [ckpt] saved epoch 1 to models/sft_local/checkpoints/epoch_01
+  [best] saved to models/sft_local/adapter + checkpoint
+step   800/2370 | train_loss 1.3946 | val_loss 1.6960 | lr 1.61e-04 | 9.40s/step | 80.5min
+step   820/2370 | train_loss 1.1230 | val_loss 1.7406 | lr 1.59e-04 | 6.07s/step | 82.5min
+step   840/2370 | train_loss 1.1973 | val_loss 1.6991 | lr 1.57e-04 | 6.35s/step | 84.6min
+step   860/2370 | train_loss 1.1559 | val_loss 1.7697 | lr 1.55e-04 | 6.42s/step | 86.8min
+step   880/2370 | train_loss 1.2080 | val_loss 1.6966 | lr 1.53e-04 | 6.34s/step | 88.9min
+step   900/2370 | train_loss 1.2004 | val_loss 1.7412 | lr 1.50e-04 | 6.18s/step | 90.9min
+step   920/2370 | train_loss 1.2550 | val_loss 1.7208 | lr 1.48e-04 | 6.25s/step | 93.0min
+step   940/2370 | train_loss 1.2303 | val_loss 1.7198 | lr 1.46e-04 | 6.19s/step | 95.1min
+step   960/2370 | train_loss 1.1413 | val_loss 1.7205 | lr 1.44e-04 | 6.11s/step | 97.1min
+step   980/2370 | train_loss 1.1425 | val_loss 1.7223 | lr 1.41e-04 | 6.89s/step | 99.4min
+step  1000/2370 | train_loss 1.1998 | val_loss 1.7035 | lr 1.39e-04 | 6.29s/step | 101.5min
+step  1020/2370 | train_loss 1.1833 | val_loss 1.7344 | lr 1.37e-04 | 5.73s/step | 103.4min
+step  1040/2370 | train_loss 1.2640 | val_loss 1.7089 | lr 1.34e-04 | 6.81s/step | 105.7min
+step  1060/2370 | train_loss 1.2342 | val_loss 1.7228 | lr 1.32e-04 | 6.79s/step | 108.0min
+step  1080/2370 | train_loss 1.2185 | val_loss 1.7253 | lr 1.29e-04 | 6.07s/step | 110.0min
+step  1100/2370 | train_loss 1.2663 | val_loss 1.7181 | lr 1.27e-04 | 6.99s/step | 112.3min
+step  1120/2370 | train_loss 1.2051 | val_loss 1.7264 | lr 1.24e-04 | 6.35s/step | 114.4min
+step  1140/2370 | train_loss 1.2281 | val_loss 1.7254 | lr 1.22e-04 | 6.07s/step | 116.5min
+step  1160/2370 | train_loss 1.2257 | val_loss 1.7070 | lr 1.19e-04 | 5.99s/step | 118.5min
+step  1180/2370 | train_loss 1.1278 | val_loss 1.7093 | lr 1.17e-04 | 7.20s/step | 120.9min
+step  1200/2370 | train_loss 1.2407 | val_loss 1.7133 | lr 1.14e-04 | 7.16s/step | 123.2min
+step  1220/2370 | train_loss 1.2391 | val_loss 1.7063 | lr 1.12e-04 | 5.97s/step | 125.2min
+step  1240/2370 | train_loss 1.2138 | val_loss 1.7085 | lr 1.10e-04 | 6.02s/step | 127.2min
+step  1260/2370 | train_loss 1.2314 | val_loss 1.7124 | lr 1.07e-04 | 5.79s/step | 129.2min
+step  1280/2370 | train_loss 1.2397 | val_loss 1.7089 | lr 1.05e-04 | 5.77s/step | 131.1min
+step  1300/2370 | train_loss 1.1148 | val_loss 1.7055 | lr 1.02e-04 | 5.71s/step | 133.0min
+step  1320/2370 | train_loss 1.2084 | val_loss 1.7059 | lr 9.96e-05 | 5.73s/step | 134.9min
+step  1340/2370 | train_loss 1.1698 | val_loss 1.7339 | lr 9.71e-05 | 5.73s/step | 136.8min
+step  1360/2370 | train_loss 1.1551 | val_loss 1.7063 | lr 9.46e-05 | 5.75s/step | 138.7min
+step  1380/2370 | train_loss 1.1128 | val_loss 1.7101 | lr 9.22e-05 | 5.76s/step | 140.6min
+step  1400/2370 | train_loss 1.1888 | val_loss 1.6940 | lr 8.97e-05 | 5.69s/step | 142.5min
+step  1420/2370 | train_loss 1.1409 | val_loss 1.6984 | lr 8.73e-05 | 5.70s/step | 144.4min
+step  1440/2370 | train_loss 1.1696 | val_loss 1.7154 | lr 8.49e-05 | 5.65s/step | 146.3min
+step  1460/2370 | train_loss 1.1604 | val_loss 1.7053 | lr 8.25e-05 | 5.75s/step | 148.2min
+step  1480/2370 | train_loss 1.2019 | val_loss 1.7032 | lr 8.02e-05 | 5.82s/step | 150.2min
+step  1500/2370 | train_loss 1.1173 | val_loss 1.7091 | lr 7.78e-05 | 5.79s/step | 152.1min
+step  1520/2370 | train_loss 1.2846 | val_loss 1.6942 | lr 7.55e-05 | 5.80s/step | 154.0min
+step  1540/2370 | train_loss 1.2535 | val_loss 1.6933 | lr 7.32e-05 | 5.79s/step | 156.0min
+step  1560/2370 | train_loss 1.1296 | val_loss 1.7075 | lr 7.10e-05 | 5.63s/step | 157.9min
+step  1580/2370 | train_loss 1.1567 | val_loss 1.7021 | lr 6.88e-05 | 5.65s/step | 159.7min
+  [epoch 2] train_loss=1.1922 val_loss=1.7020 ppl=5.48 - | 160.8min
+  [ckpt] saved epoch 2 to models/sft_local/checkpoints/epoch_02
+step  1600/2370 | train_loss 0.7442 | val_loss 2.0199 | lr 6.66e-05 | 8.77s/step | 162.7min
+step  1620/2370 | train_loss 0.6648 | val_loss 1.9305 | lr 6.44e-05 | 5.66s/step | 164.5min
+step  1640/2370 | train_loss 0.7768 | val_loss 1.9527 | lr 6.23e-05 | 5.79s/step | 166.5min
+step  1660/2370 | train_loss 0.7040 | val_loss 1.9858 | lr 6.02e-05 | 5.76s/step | 168.4min
+step  1680/2370 | train_loss 0.7922 | val_loss 1.9625 | lr 5.81e-05 | 5.78s/step | 170.3min
+step  1700/2370 | train_loss 0.7844 | val_loss 1.9346 | lr 5.61e-05 | 5.75s/step | 172.2min
+step  1720/2370 | train_loss 0.7982 | val_loss 1.9829 | lr 5.41e-05 | 5.79s/step | 174.2min
+step  1740/2370 | train_loss 0.7494 | val_loss 1.9673 | lr 5.22e-05 | 5.77s/step | 176.1min
+step  1760/2370 | train_loss 0.7586 | val_loss 2.0045 | lr 5.03e-05 | 5.77s/step | 178.0min
+step  1780/2370 | train_loss 0.7716 | val_loss 2.0311 | lr 4.85e-05 | 5.83s/step | 180.0min
+step  1800/2370 | train_loss 0.8146 | val_loss 1.9666 | lr 4.67e-05 | 5.73s/step | 181.9min
+step  1820/2370 | train_loss 0.7056 | val_loss 1.9972 | lr 4.49e-05 | 5.73s/step | 183.8min
+step  1840/2370 | train_loss 0.7017 | val_loss 1.9911 | lr 4.32e-05 | 5.69s/step | 185.7min
+step  1860/2370 | train_loss 0.7135 | val_loss 1.9852 | lr 4.16e-05 | 5.68s/step | 187.6min
+step  1880/2370 | train_loss 0.7993 | val_loss 1.9727 | lr 4.00e-05 | 5.81s/step | 189.5min
+step  1900/2370 | train_loss 0.7978 | val_loss 2.0106 | lr 3.85e-05 | 5.81s/step | 191.4min
+step  1920/2370 | train_loss 0.7252 | val_loss 1.9842 | lr 3.70e-05 | 5.77s/step | 193.4min
+step  1940/2370 | train_loss 0.6751 | val_loss 2.0139 | lr 3.55e-05 | 5.82s/step | 195.3min
+step  1960/2370 | train_loss 0.7025 | val_loss 1.9916 | lr 3.42e-05 | 5.75s/step | 197.2min
+step  1980/2370 | train_loss 0.7841 | val_loss 1.9979 | lr 3.29e-05 | 5.83s/step | 199.2min
+step  2000/2370 | train_loss 0.8228 | val_loss 1.9680 | lr 3.16e-05 | 5.76s/step | 201.1min
+step  2020/2370 | train_loss 0.7426 | val_loss 1.9907 | lr 3.04e-05 | 5.86s/step | 203.0min
+step  2040/2370 | train_loss 0.7400 | val_loss 1.9927 | lr 2.93e-05 | 5.73s/step | 204.9min
+step  2060/2370 | train_loss 0.6882 | val_loss 2.0084 | lr 2.82e-05 | 5.68s/step | 206.8min
+step  2080/2370 | train_loss 0.8259 | val_loss 1.9760 | lr 2.72e-05 | 5.76s/step | 208.8min
+step  2100/2370 | train_loss 0.8154 | val_loss 1.9648 | lr 2.63e-05 | 5.70s/step | 210.7min
+step  2120/2370 | train_loss 0.7215 | val_loss 1.9828 | lr 2.54e-05 | 5.73s/step | 212.6min
+step  2140/2370 | train_loss 0.6957 | val_loss 2.0042 | lr 2.46e-05 | 5.80s/step | 214.5min
+step  2160/2370 | train_loss 0.8300 | val_loss 1.9888 | lr 2.38e-05 | 5.76s/step | 216.4min
+step  2180/2370 | train_loss 0.7745 | val_loss 1.9968 | lr 2.31e-05 | 5.75s/step | 218.3min
+step  2200/2370 | train_loss 0.7345 | val_loss 2.0269 | lr 2.25e-05 | 5.73s/step | 220.3min
+step  2220/2370 | train_loss 0.7803 | val_loss 2.0101 | lr 2.20e-05 | 5.77s/step | 222.2min
+step  2240/2370 | train_loss 0.7392 | val_loss 2.0089 | lr 2.15e-05 | 5.72s/step | 224.1min
+step  2260/2370 | train_loss 0.7352 | val_loss 2.0250 | lr 2.11e-05 | 5.77s/step | 226.0min
+step  2280/2370 | train_loss 0.7977 | val_loss 1.9892 | lr 2.07e-05 | 5.80s/step | 227.9min
+step  2300/2370 | train_loss 0.7331 | val_loss 1.9924 | lr 2.04e-05 | 5.81s/step | 229.9min
+step  2320/2370 | train_loss 0.6808 | val_loss 2.0039 | lr 2.02e-05 | 5.71s/step | 231.8min
+step  2340/2370 | train_loss 0.6720 | val_loss 2.0082 | lr 2.01e-05 | 5.70s/step | 233.7min
+step  2360/2370 | train_loss 0.6867 | val_loss 2.0156 | lr 2.00e-05 | 5.73s/step | 235.6min
+  [epoch 3] train_loss=0.7489 val_loss=2.0131 ppl=7.49 - | 237.1min
+  [ckpt] saved epoch 3 to models/sft_local/checkpoints/epoch_03
+
+Done! 2371 steps in 238.1min
+Final val_loss=2.0131 ppl=7.49
+Best val_loss=1.6730 ppl=5.33
+
+Checkpoints: models/sft_local/checkpoints/
+Best model: models/sft_local/adapter/
+Perplexity log: models/sft_local/perplexity_log.jsonl
