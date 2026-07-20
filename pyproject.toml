@@ -12,7 +12,7 @@ dependencies = [
     "peft",
     "bitsandbytes",
     "accelerate",
-    "numpy",
+    "numpy<2.4",  # numpy>=2.4 breaks coremltools torch frontend (apple/coremltools#2633)
     "hf-transfer>=0.1.9",
     "coremltools>=9.0",
 ]

@@ -7,6 +7,6 @@ Requires-Dist: transformers
 Requires-Dist: peft
 Requires-Dist: bitsandbytes
 Requires-Dist: accelerate
-Requires-Dist: numpy
+Requires-Dist: numpy<2.4
 Requires-Dist: hf-transfer>=0.1.9
 Requires-Dist: coremltools>=9.0
