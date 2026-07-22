@@ -23,8 +23,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 STRONG_SYSTEM = (
-    "You are an expert legal and financial assistant. "
-    "Provide detailed, accurate, well-structured answers with clear reasoning."
+    "You are an expert assistant. "
+    "Provide detailed, accurate, well-structured answers with clear reasoning. "
+    "Adapt your expertise to the domain of the question."
 )
 
 WEAK_SYSTEM = (
@@ -35,7 +36,7 @@ WEAK_SYSTEM = (
 JUDGE_SYSTEM = (
     "You are an impartial quality judge. You will be given a question, "
     "Response A, and Response B. Decide which response is better for a "
-    "legal/financial professional seeking a thorough answer.\n\n"
+    "user seeking a thorough, accurate, and well-structured answer.\n\n"
     "Output ONLY valid JSON: {\"winner\": \"A\" or \"B\", \"score_a\": 1-5, \"score_b\": 1-5, \"reason\": \"...\"}"
 )
 
@@ -47,21 +48,31 @@ JUDGE_USER_TEMPLATE = (
 )
 
 
-def load_prompts(path: str, n_samples: int, seed: int = 42) -> list[str]:
-    """Sample unique user prompts from the SFT dataset."""
-    with open(path, encoding="utf-8") as f:
-        examples = [json.loads(line) for line in f]
+def load_prompts(paths: str | list[str], n_samples: int, seed: int = 42) -> list[str]:
+    """Sample unique user prompts from one or more JSONL datasets."""
+    if isinstance(paths, str):
+        paths = [paths]
 
     prompts = []
-    seen = set()
-    for ex in examples:
-        for msg in ex["messages"]:
-            if msg["role"] == "user":
-                text = msg["content"].strip()
-                if text and text not in seen:
-                    seen.add(text)
-                    prompts.append(text)
-                break
+    seen: set[str] = set()
+    for path in paths:
+        if not os.path.exists(path):
+            continue
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                ex = json.loads(line)
+                for msg in ex.get("messages", []):
+                    if msg["role"] == "user":
+                        text = msg["content"].strip()
+                        if text and text not in seen:
+                            seen.add(text)
+                            prompts.append(text)
+                        break
+                else:
+                    prompt = ex.get("prompt", "").strip()
+                    if prompt and prompt not in seen:
+                        seen.add(prompt)
+                        prompts.append(prompt)
 
     random.seed(seed)
     random.shuffle(prompts)
@@ -163,8 +174,12 @@ async def create_dataset(args):
                     existing_prompts.add(item["prompt"].strip().lower())
         print(f"Loaded {len(existing)} existing pairs (append mode)")
 
-    sft_path = os.path.join(os.path.dirname(__file__), "..", "data", "sft_train.jsonl")
-    prompts = load_prompts(sft_path, args.n_samples, seed=args.seed)
+    data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+    source_paths = [
+        os.path.join(data_dir, "sft_train.jsonl"),
+        os.path.join(data_dir, "instruction_train.jsonl"),
+    ]
+    prompts = load_prompts(source_paths, args.n_samples, seed=args.seed)
     if args.append:
         prompts = [p for p in prompts if p.strip().lower() not in existing_prompts]
     print(f"Sampled {len(prompts)} unique new prompts")
