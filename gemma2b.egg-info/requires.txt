@@ -6,3 +6,7 @@ accelerate
 numpy<2.4
 hf-transfer>=0.1.9
 coremltools>=9.0
+trl
+datasets
+openai
+python-dotenv

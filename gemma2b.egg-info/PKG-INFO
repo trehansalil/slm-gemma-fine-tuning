@@ -10,3 +10,7 @@ Requires-Dist: accelerate
 Requires-Dist: numpy<2.4
 Requires-Dist: hf-transfer>=0.1.9
 Requires-Dist: coremltools>=9.0
+Requires-Dist: trl
+Requires-Dist: datasets
+Requires-Dist: openai
+Requires-Dist: python-dotenv

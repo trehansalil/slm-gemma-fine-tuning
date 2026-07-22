@@ -1,1 +1,2 @@
 gemma2b
+slm125m
