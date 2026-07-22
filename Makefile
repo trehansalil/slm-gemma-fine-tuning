@@ -31,6 +31,8 @@
         download-slm125m train-dpo-slm125m \
         pipeline-rlaif pipeline-rlaif-interactive \
         extend-and-train-slm125m \
+        create-instruction-data instruction-tune-125m instruction-tune-gemma \
+        merge-instruction \
         ARGS
 
 # Directories
@@ -257,3 +259,42 @@ extend-and-train-slm125m: ## Extend preference data + retrain SLM 125M with DPO
 		--model $(SLM125M_BASE) --output $(SLM125M_DPO) \
 		--data $(PREF_DATA) \
 		--epochs $(or $(EPOCHS),3)
+
+# ── Stage 02: Instruction Tuning ─────────────────────────────────────────────
+
+INSTR_DATA      := data/instruction_train.jsonl
+SLM125M_INSTR   := $(MODELS)/slm125m/instruction
+INSTR_ADAPTER   := $(MODELS)/instruction_local/adapter
+INSTR_MERGED    := $(MODELS)/instruction_local/merged
+
+# Usage: make create-instruction-data ARGS="--n-samples 2000"
+# Args:
+# --n-samples     (default=2000) Instruction-response pairs to generate
+# --concurrency   (default=30)   Max parallel Azure API calls
+# --seed          (default=42)   Random seed
+# --append                       Append to existing dataset
+create-instruction-data: ## Generate instruction dataset via Azure OpenAI
+	python -m shared.create_instruction_data $(ARGS)
+
+# Usage: make instruction-tune-125m [ARGS="--epochs 3"]
+# Args:
+# --epochs        (default=2)    Training epochs
+# --lr            (default=1e-5) Learning rate (full-parameter mode)
+# --device        (default=auto) Force device (mps/cuda/cpu)
+instruction-tune-125m: ## Instruction-tune SLM 125M (full-parameter) → models/slm125m/instruction/
+	python -m shared.instruction_tune --model $(SLM125M_BASE) --data $(INSTR_DATA) --output $(SLM125M_INSTR) $(ARGS)
+
+# Usage: make instruction-tune-gemma [ARGS="--epochs 2"]
+# Args:
+# --epochs        (default=2)    Training epochs
+# --lr            (default=2e-5) Learning rate (QLoRA mode)
+# --device        (default=auto) Force device (mps/cuda/cpu)
+instruction-tune-gemma: ## Instruction-tune Gemma 2B (QLoRA) → models/instruction_local/adapter/
+	python -m shared.instruction_tune --model $(LOCAL_MERGED) --data $(INSTR_DATA) --output $(INSTR_ADAPTER) $(ARGS)
+
+# Usage: make merge-instruction
+# Args: none
+# Note: base is sft_local/merged (the model the adapter was trained on),
+# so Stage 01 SFT knowledge is preserved in the merge.
+merge-instruction: ## Merge instruction adapter → models/instruction_local/merged/
+	python gemma2b/merge_adapter.py --adapter $(INSTR_ADAPTER) --output $(INSTR_MERGED) --base $(LOCAL_MERGED) $(ARGS)

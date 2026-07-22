@@ -22,4 +22,4 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["gemma2b*", "slm125m*"]
+include = ["gemma2b*", "slm125m*", "shared*"]
