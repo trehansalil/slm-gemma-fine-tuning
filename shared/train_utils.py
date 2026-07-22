@@ -220,7 +220,8 @@ def evaluate(model, val_dl, device):
 def train(model, tokenizer, features, output_dir, device, *,
           epochs: int = 2, lr: float = 1e-5, min_lr: float | None = None,
           batch_size: int = 8, grad_accum: int = 2, weight_decay: float = 0.01,
-          grad_clip: float = 1.0, log_every: int = 50, seed: int = 42):
+          grad_clip: float = 1.0, log_every: int = 50, eval_every: int = 0,
+          seed: int = 42):
     """AdamW + cosine-warmup loop; saves best-val-loss weights to output_dir.
 
     Works for both full-parameter models and PEFT-wrapped models —
@@ -305,6 +306,25 @@ def train(model, tokenizer, features, output_dir, device, *,
                                      "lr": current_lr}) + "\n")
                 mf.flush()
                 running_loss = 0.0
+                t0 = time.time()
+
+            if eval_every and step % eval_every == 0:
+                vl = evaluate(model, val_dl, device)
+                ppl = math.exp(min(vl, 20))
+                improving = "+" if vl < best_val_loss else "-"
+                print(f"  [eval step {step:>5}/{total_steps}] val_loss={vl:.4f} "
+                      f"ppl={ppl:.2f} {improving} | "
+                      f"{(time.time() - t_global) / 60:.1f}min")
+                mf.write(json.dumps({"epoch": epoch, "step": step,
+                                     "val_loss": round(vl, 4),
+                                     "ppl": round(ppl, 2)}) + "\n")
+                mf.flush()
+                if vl < best_val_loss:
+                    best_val_loss = vl
+                    model.save_pretrained(output_dir)
+                    tokenizer.save_pretrained(output_dir)
+                    print(f"  [best] saved to {output_dir} (step {step})")
+                model.train()
                 t0 = time.time()
 
         avg_train_loss = epoch_train_loss / max(1, epoch_train_steps)

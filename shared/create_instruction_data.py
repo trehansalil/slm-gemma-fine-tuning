@@ -69,6 +69,19 @@ TASK_TYPES = {
         "(included in the instruction) with a request to compare them and "
         "recommend or analyze trade-offs"
     ),
+    "rewrite": (
+        "rewrite/paraphrase: a legal or financial passage (included in the "
+        "instruction) with a request to rewrite it — e.g. simplify for a "
+        "non-expert audience, make more formal, convert to plain English, "
+        "shorten to a specific word count, or change the tone"
+    ),
+    "classify": (
+        "classification: a legal or financial text snippet (included in the "
+        "instruction) with a request to classify it into a stated category "
+        "set — e.g. contract type, risk level, filing category, sentiment, "
+        "clause function, or compliance status. The instruction must list "
+        "the allowed categories explicitly"
+    ),
 }
 
 INSTRUCTION_GEN_SYSTEM = (
@@ -84,7 +97,12 @@ INSTRUCTION_GEN_TEMPLATE = (
     "legal/financial dataset (match their domain, NOT their task type):\n"
     "{seeds}\n\n"
     "Vary the sub-domain (contracts, litigation, securities filings, "
-    "accounting, tax, banking), length, and difficulty. "
+    "accounting, tax, banking), length, and difficulty.\n\n"
+    "IMPORTANT: at least 30% of instructions MUST include an explicit "
+    "output-format constraint — e.g. 'answer in bullet points', "
+    "'respond in exactly 3 sentences', 'output as a JSON object with keys …', "
+    "'use a markdown table', 'start your answer with …', 'limit your response "
+    "to 100 words'. This teaches the model to obey format instructions.\n\n"
     "Output a JSON array of {k} instruction strings."
 )
 

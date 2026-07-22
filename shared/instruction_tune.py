@@ -64,6 +64,10 @@ def main():
     parser.add_argument("--seq-len", type=int, default=MAX_SEQ_LEN)
     parser.add_argument("--lora-r", type=int, default=16)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--log-every", type=int, default=50,
+                        help="Log train_loss to stdout + metrics.jsonl every N optimizer steps")
+    parser.add_argument("--eval-every", type=int, default=0,
+                        help="Run val_loss+perplexity + best-checkpoint every N steps (0=only per-epoch)")
     args = parser.parse_args()
 
     device = get_device(args.device)
@@ -142,7 +146,8 @@ def main():
 
     best = train(model, tokenizer, features, args.output, device,
                  epochs=args.epochs, lr=lr, batch_size=batch_size,
-                 grad_accum=grad_accum, seed=args.seed)
+                 grad_accum=grad_accum, seed=args.seed, log_every=args.log_every,
+                 eval_every=args.eval_every)
     print(f"\nDone ({mode} mode). Best val_loss={best:.4f}. "
           f"Saved to {args.output}")
 
