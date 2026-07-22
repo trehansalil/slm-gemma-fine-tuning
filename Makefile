@@ -184,6 +184,9 @@ pipeline-local: merge-local convert-coreml-local ## Full local pipeline: merge �
 
 SLM125M_BASE    := $(MODELS)/slm125m/base
 SLM125M_DPO     := $(MODELS)/slm125m/dpo
+SLM125M_RLAIF   := $(MODELS)/slm125m/rlaif
+SLM125M_RAFT    := $(MODELS)/slm125m/raft
+RAFT_DATA       := data/raft_train.jsonl
 DPO_LOCAL       := $(MODELS)/dpo_local/adapter
 
 # Usage: make create-preference-data [ARGS="--n-samples 200 --concurrency 20"]
@@ -215,8 +218,8 @@ download-slm125m: ## Download thesreedath/slm-125m-qa → models/slm125m/base/
 # --batch-size    (default=8)    Batch size
 # --lr            (default=5e-5) Learning rate
 # --beta          (default=0.1)  DPO beta
-train-dpo-slm125m: ## DPO fine-tune SLM 125M on preference data
-	python -m slm125m.train_dpo --model $(SLM125M_BASE) --output $(SLM125M_DPO) $(ARGS)
+train-dpo-slm125m: ## DPO fine-tune SLM 125M on preference data (from instruction-tuned checkpoint)
+	python -m slm125m.train_dpo --model $(SLM125M_INSTR) --output $(SLM125M_DPO) $(ARGS)
 
 # Usage: make pipeline-rlaif
 # Args: none
@@ -259,6 +262,34 @@ extend-and-train-slm125m: ## Extend preference data + retrain SLM 125M with DPO
 		--model $(SLM125M_BASE) --output $(SLM125M_DPO) \
 		--data $(PREF_DATA) \
 		--epochs $(or $(EPOCHS),3)
+
+# Usage: make rlaif-slm125m [ARGS="--epochs 3 --beta 0.1"]
+# Args:
+# --epochs        (default=3)    Training epochs
+# --beta          (default=0.1)  DPO beta / implicit reward temperature
+# --lr            (override)     Learning rate (auto-detected by model size)
+# --eval-split    (default=0.05) Fraction of data for evaluation
+# --save-every-epoch              Save checkpoint after each epoch
+rlaif-slm125m: ## RLAIF/DPO from instruction-tuned SLM 125M on expanded preference data
+	.venv/bin/python -m shared.rlaif_train \
+		--model $(SLM125M_INSTR) \
+		--data $(PREF_DATA) \
+		--output $(SLM125M_RLAIF) \
+		$(ARGS)
+
+# Usage: make raft-slm125m [ARGS="--epochs 3 --beta 0.1"]
+# Args:
+# --epochs        (default=3)    Training epochs
+# --beta          (default=0.1)  DPO beta / implicit reward temperature
+# --lr            (override)     Learning rate (auto-detected by model size)
+# --eval-split    (default=0.05) Fraction of data for evaluation
+# --save-every-epoch              Save checkpoint after each epoch
+raft-slm125m: ## RAFT training on RLAIF-tuned SLM 125M with 18k RAFT examples
+	.venv/bin/python -m shared.rlaif_train \
+		--model $(SLM125M_RLAIF) \
+		--data $(RAFT_DATA) \
+		--output $(SLM125M_RAFT) \
+		$(ARGS)
 
 # ── Stage 02: Instruction Tuning ─────────────────────────────────────────────
 

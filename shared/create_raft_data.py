@@ -75,7 +75,7 @@ PASSAGE_QA_TEMPLATE = (
     "Domain: {domain}\n"
     "Sub-areas: {sub_areas}\n\n"
     "Requirements:\n"
-    "- Passage: 150-350 words, realistic, with specific names, dates, "
+    "- Passage: 80-150 words, realistic, with specific names, dates, "
     "dollar amounts, percentages, and defined terms\n"
     "- Generate {n_qa} questions answerable ONLY from this passage\n"
     "- Answers: 1-4 sentences, precise, grounded in the passage\n"
@@ -235,7 +235,7 @@ async def build_passage_bank(client, model, sem, n_bundles: int):
 # ---------------------------------------------------------------------------
 
 def assemble_raft_examples(bank, n_samples, unanswerable_frac=0.25,
-                           n_distractors=4, max_distractor_len=200):
+                           n_distractors=2, max_distractor_len=200):
     """Build RAFT prompts from the passage bank."""
     print(f"Phase 2: Assembling {n_samples} RAFT examples "
           f"({unanswerable_frac:.0%} unanswerable)...")
