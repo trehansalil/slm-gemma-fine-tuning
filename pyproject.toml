@@ -15,7 +15,11 @@ dependencies = [
     "numpy<2.4",  # numpy>=2.4 breaks coremltools torch frontend (apple/coremltools#2633)
     "hf-transfer>=0.1.9",
     "coremltools>=9.0",
+    "trl",
+    "datasets",
+    "openai",
+    "python-dotenv",
 ]
 
 [tool.setuptools.packages.find]
-include = ["gemma2b*"]
+include = ["gemma2b*", "slm125m*"]

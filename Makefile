@@ -27,6 +27,10 @@
         convert-coreml-modal convert-coreml-local \
         chat-base chat-modal chat-local chat-coreml-modal chat-coreml-local chat-remote \
         pipeline-modal pipeline-local \
+        create-preference-data create-preference-interactive train-dpo-gemma \
+        download-slm125m train-dpo-slm125m \
+        pipeline-rlaif pipeline-rlaif-interactive \
+        extend-and-train-slm125m \
         ARGS
 
 # Directories
@@ -173,3 +177,83 @@ pipeline-modal: download-adapter merge-modal convert-coreml-modal ## Full Modal 
 # Usage: make pipeline-local
 # Args: none
 pipeline-local: merge-local convert-coreml-local ## Full local pipeline: merge → CoreML
+
+# ── RLAIF / DPO ─────────────────────────────────────────────────────────────
+
+SLM125M_BASE    := $(MODELS)/slm125m/base
+SLM125M_DPO     := $(MODELS)/slm125m/dpo
+DPO_LOCAL       := $(MODELS)/dpo_local/adapter
+
+# Usage: make create-preference-data [ARGS="--n-samples 200 --concurrency 20"]
+# Args:
+# --n-samples     (default=500)  Number of prompt triplets to generate
+# --concurrency   (default=50)   Max parallel Azure API calls
+# --seed          (default=42)   Random seed
+create-preference-data: ## Generate preference dataset via Azure OpenAI
+	python -m gemma2b.create_preference_data $(ARGS)
+
+# Usage: make train-dpo-gemma [ARGS="--epochs 2 --lr 5e-5"]
+# Args:
+# --sft-model     (default=models/sft_local/merged)
+# --epochs        (default=1)    Training epochs
+# --batch-size    (default=2)    Batch size
+# --lr            (default=5e-5) Learning rate
+# --beta          (default=0.1)  DPO beta
+train-dpo-gemma: ## DPO fine-tune Gemma 2B on preference data
+	python -m gemma2b.train_dpo --sft-model $(LOCAL_MERGED) --output $(DPO_LOCAL) $(ARGS)
+
+# Usage: make download-slm125m
+# Args: none
+download-slm125m: ## Download thesreedath/slm-125m-qa → models/slm125m/base/
+	python -m slm125m.download_model --output $(SLM125M_BASE)
+
+# Usage: make train-dpo-slm125m [ARGS="--epochs 2 --lr 5e-5"]
+# Args:
+# --epochs        (default=2)    Training epochs
+# --batch-size    (default=8)    Batch size
+# --lr            (default=5e-5) Learning rate
+# --beta          (default=0.1)  DPO beta
+train-dpo-slm125m: ## DPO fine-tune SLM 125M on preference data
+	python -m slm125m.train_dpo --model $(SLM125M_BASE) --output $(SLM125M_DPO) $(ARGS)
+
+# Usage: make pipeline-rlaif
+# Args: none
+pipeline-rlaif: create-preference-data train-dpo-gemma ## Full RLAIF pipeline: create data → DPO train Gemma 2B
+
+PREF_DATA := data/preference_train.jsonl
+
+# Usage: make create-preference-interactive [ARGS="--batch --batch-size 30"]
+# Args:
+# --output      (default=data/preference_train.jsonl)  Appends to existing file if present
+# --batch       Load SFT prompts for batch review mode
+# --batch-size  (default=50) Number of SFT prompts to pre-load
+create-preference-interactive: ## Interactive preference dataset builder (type prompts, review pairs)
+	python -m slm125m.create_preference_interactive --output $(PREF_DATA) $(ARGS)
+
+# Usage: make pipeline-rlaif-interactive
+# Args: none
+# Runs the interactive dataset builder (appends to preference_train.jsonl), then DPO-trains SLM 125M.
+pipeline-rlaif-interactive: create-preference-interactive ## Interactive data → DPO train SLM 125M
+	python -m slm125m.train_dpo --model $(SLM125M_BASE) --output $(SLM125M_DPO) --data $(PREF_DATA)
+
+# Usage: make extend-and-train-slm125m [ARGS="--n-samples 200 --epochs 3"]
+# Args:
+# --n-samples     (default=500)  New prompts to sample (skips existing)
+# --concurrency   (default=50)   Parallel API calls
+# --seed          (default=43)   Random seed (different from original 42 to get new prompts)
+# --epochs        (default=3)    DPO training epochs
+# --batch-size    (default=8)    Training batch size
+# --lr            (default=5e-5) Learning rate
+extend-and-train-slm125m: ## Extend preference data + retrain SLM 125M with DPO
+	@echo "=== Step 1: Extending preference dataset ==="
+	TMPDIR=/tmp HF_DATASETS_CACHE=/tmp/hf_cache .venv/bin/python -m gemma2b.create_preference_data \
+		--append --output $(PREF_DATA) \
+		--n-samples $(or $(N_SAMPLES),500) \
+		--seed $(or $(SEED),43) \
+		$(ARGS)
+	@echo ""
+	@echo "=== Step 2: DPO training on extended dataset ==="
+	TMPDIR=/tmp HF_DATASETS_CACHE=/tmp/hf_cache .venv/bin/python -m slm125m.train_dpo \
+		--model $(SLM125M_BASE) --output $(SLM125M_DPO) \
+		--data $(PREF_DATA) \
+		--epochs $(or $(EPOCHS),3)
