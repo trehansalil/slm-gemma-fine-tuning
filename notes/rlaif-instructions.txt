@@ -1,4 +1,4 @@
-Okay, we have a fine-tuned model of gamma 2 billion and a 125 million fine-tuned model, which was fine-tuned on the QA dataset, so these are the SFT frozen models.
+Okay, we have a fine-tuned model of gamma 2 billion and a 125 million fine-tuned model, which was fine-tuned on the QA dataset and then further instruction-tuned (see notes/instruction-tuning-instructions.txt). The instruction-tuned checkpoints are the frozen starting models for RLAIF: models/slm125m/instruction for the 125 million model and models/instruction_local/merged for gamma 2B.
 
 Now I want to implement reinforcement learning with AI feedback on both of these models so that I can have a slightly better version of these models.
 
@@ -14,7 +14,7 @@ I want you to use a more powerful LLM hosted on Azure, which could be Azure Open
 
 I do not want to create a huge dataset because this whole implementation should be relatively fast, so I want the dataset to be maybe a total of 500 prompt-answer triplets.
 
-And for the frozen SFT, you can pick the supervised fine-tuned model, which was fine-tuned on the QA dataset, the 125 million model. You will also find the fine-tuned model on gamma in the working directory.
+And for the frozen policy starting point, use the instruction-tuned checkpoints, not the raw QA-SFT ones: models/slm125m/instruction for the 125 million model, and models/instruction_local/merged for gamma 2B (both produced by the instruction-tuning stage). If those checkpoints don't exist yet, run the instruction-tuning stage first.
 
 Now, first, I want you to make a plan regarding how much expense this is going to be and what the approximate time is that we will be taking for this.
 

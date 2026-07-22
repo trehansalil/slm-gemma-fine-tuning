@@ -1,0 +1,117 @@
+Okay, we now have SFT models, then RLAIF/DPO-tuned versions of both the Gemma 2B and the
+SLM 125M. Next thing I want is Stage 04 - RAFT (Retrieval Augmented Fine-Tuning).
+
+The idea: teach the model to answer using a retrieved context and, critically, to pick out
+the ONE oracle document that actually contains the answer while ignoring the distractor
+passages sitting next to it. Same live-lecture constraints as before - I can't sit through
+more than ~15 min of data curation plus training, so keep the dataset small and clean, and
+use the Azure LLM judge to validate. Everything below should feel like an extension of the
+RLAIF stage, not a rewrite.
+
+I want to run this in TWO variants so we can compare which base is better for retrieval:
+  4A  RAFT-on-RLAIF  - start from the RLAIF checkpoints (models/slm125m/rlaif,
+                       models/rlaif_local/merged)
+  4B  RAFT-on-DPO    - start from the DPO-on-instruct checkpoints
+                       (models/slm125m/dpo_instruct, models/dpo_instruct_local/merged)
+DECIDED: these input checkpoints don't exist yet and that's fine - both branches now
+descend from the instruction-tuned models (NOT the old QA-SFT ones), so stages 3A and 3B
+must finish first and produce them. The data generation below has no such dependency -
+run it early, in parallel with stages 2-3.
+
+------------------------------------------------------------------------------
+DATA GENERATION (model-agnostic, do this once, run early)
+------------------------------------------------------------------------------
+New script: shared/create_raft_data.py  ->  writes data/raft_train.jsonl
+Reuse the exact async + Semaphore + AsyncAzureOpenAI pattern from
+gemma2b/create_preference_data.py (concurrency default 50, dedup, judge pass). Same .env keys
+(AZURE_API_KEY, AZURE_BASE_URL, AZURE_API_VERSION, AZURE_MODEL). If I hand you multiple Azure
+keys/endpoints, round-robin a client per key so the calls fan out across all of them.
+
+Steps:
+  1. Sample QA prompts from data/sft_train.jsonl the same way load_prompts() does - pull the
+     "user" message from each {"messages":[...]} record. The assistant message there is the
+     gold answer, and the user turn already references a legal/financial passage - use that
+     passage text as the ORACLE document.
+  2. For each question build a context = 1 oracle doc + K distractors (default K=4). Draw
+     distractors from OTHER examples' passages, shuffle so the oracle isn't always first.
+  3. Azure GPT writes a chain-of-thought "answer" that reasons over the context, explicitly
+     cites/quotes the oracle passage ("According to Document 3, ..."), and ignores the
+     distractors. Feed it the gold assistant answer as a correctness anchor.
+  4. RAFT oracle-omission trick: for ~20% of examples, DROP the oracle from the context. For
+     those, the target answer must say the context does not contain the answer (teaches the
+     model to abstain instead of hallucinating from distractors).
+  5. Judge pass (Azure, temperature 0, same JSON-parsing style as judge_pair): confirm the
+     answer actually cites the oracle AND is correct; for omitted-oracle rows, confirm it
+     correctly abstained. Drop anything the judge fails. Dedup by question.
+
+Schema, one line per record in data/raft_train.jsonl:
+  {"question": "...",
+   "context": ["<passage A>", "<oracle passage>", "<passage C>", "..."],
+   "oracle_idx": 1,            // index of oracle in context, or -1 if omitted
+   "answer": "Let me look at the documents. Document 2 states ... therefore ..."}
+At training time flatten context into the prompt as "Document 1: ...\nDocument 2: ...\n\n
+Question: {question}" and train only on the answer tokens.
+
+Defaults: --n-samples 500 --n-distractors 4 --oracle-dropout 0.2 --concurrency 50 --seed 42.
+Makefile:  make create-raft-data ARGS="--n-samples 500 --n-distractors 4"
+
+------------------------------------------------------------------------------
+TRAINING (both branches)
+------------------------------------------------------------------------------
+New script: shared/train_raft.py  - plain SFT-style causal-LM training on the context-augmented
+prompts (NOT DPO - there are no chosen/rejected pairs here). Flags: --model --data --output,
+plus --epochs --batch-size --grad-accum --lr --max-length --device.
+Auto-pick the regime by model size (mirror what we already do). DECIDED: the 125M
+full-parameter training loop and the tokenize/loss-mask/device helpers live ONCE in
+shared/train_utils.py (created by the instruction-tuning stage) - train_raft.py imports
+from there, same as instruction_tune.py does. Always pass --model explicitly from the
+Makefile targets; never rely on a script's default checkpoint path.
+  - SLM 125M  -> full-parameter fine-tune, float32, no LoRA (like slm125m/train_dpo.py:
+    batch 8, grad-accum 2, ~2-3 epochs, lr 5e-5).
+  - Gemma 2B  -> QLoRA (nf4 on CUDA, plain fp32 on MPS), same LoraConfig as finetune_local.py
+    (r=16, alpha=32, dropout 0.05, target q/k/v/o + gate/up/down), batch 2, grad-accum 4,
+    1-2 epochs, lr 5e-5. Keep the MPS handling: attn_implementation="eager", use_bnb only on
+    cuda. Reuse the loss-masking approach from finetune_local._tokenize_chat so we only train
+    on the answer, and bump --max-length to ~1024 since contexts are long.
+
+Inputs / outputs:
+  4A (RAFT-on-RLAIF):
+     125M in:  models/slm125m/rlaif           -> out: models/slm125m/raft_rlaif
+     Gemma in: models/rlaif_local/merged       -> out: models/raft_rlaif_local/{adapter,merged}
+  4B (RAFT-on-DPO):
+     125M in:  models/slm125m/dpo_instruct     -> out: models/slm125m/raft_dpo
+     Gemma in: models/dpo_instruct_local/merged -> out: models/raft_dpo_local/{adapter,merged}
+For Gemma, merge the RAFT adapter into the input model afterward (reuse
+gemma2b/merge_adapter.py against the RLAIF/DPO merged model as --base).
+
+Makefile targets (ARGS passthrough, BASE_DIR style like the rest):
+  make train-raft-rlaif-125m     make train-raft-rlaif-gemma
+  make train-raft-dpo-125m       make train-raft-dpo-gemma
+
+------------------------------------------------------------------------------
+COMPARISON EVAL (the whole point of running both)
+------------------------------------------------------------------------------
+Hold out ~30-50 raft_train records (or generate a fresh eval slice with a different --seed).
+For each of the four resulting models, feed the context+question and check:
+  - does the answer cite the correct oracle document?
+  - is it factually right vs the gold answer?
+  - on oracle-omitted rows, does it correctly abstain instead of making something up?
+Use the Azure judge for scoring, then eyeball it too. Acceptance: spot-check at least 10
+examples per model by hand and confirm answers actually cite the oracle and don't lean on
+distractors; abstention should fire on the omitted-oracle cases. Report a small table -
+RLAIF-base vs DPO-base, 125M vs Gemma - so we can say which checkpoint is the better base
+for retrieval-augmented behavior.
+
+------------------------------------------------------------------------------
+Heads up - gaps between this plan and what's in the repo today
+------------------------------------------------------------------------------
+- DECIDED: the shared/ package is created by the instruction-tuning stage and is where all
+  reusable code goes (Azure async client, tokenize/loss-mask helpers, device detect, the
+  125M full-param training loop). train_raft.py and create_raft_data.py build on those
+  shared modules - do not duplicate logic from gemma2b/ or slm125m/.
+- DECIDED: the RLAIF-vs-DPO input paths above don't exist yet and that's expected - they are
+  the outputs of stages 3A and 3B, which start from the instruction-tuned checkpoints (not
+  the old QA-SFT ones). No renaming of the current models/slm125m/dpo or models/dpo_local
+  outputs; those are the deprecated QA-SFT-based runs. Just run 3A/3B first.
+- slm125m has no full-param SFT loop today (only train_dpo) - that loop is written once in
+  shared/train_utils.py during the instruction-tuning stage and reused here.

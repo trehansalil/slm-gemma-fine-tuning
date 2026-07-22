@@ -1,0 +1,101 @@
+Okay, before we get into RLAIF/DPO proper, I want an intermediate stage: instruction
+tuning. Right now both frozen SFT models (models/slm125m/base for the 125M, and
+models/sft_local/merged for Gemma 2B) only know how to do QA extraction over
+legal/financial context. I want to further fine-tune both of them on a broader
+instruction-following dataset before they become the base checkpoint that feeds
+into RLAIF and DPO. This is Stage 02 of the pipeline.
+
+DATA GENERATION
+
+I want you to create shared/create_instruction_data.py. Reuse the exact async +
+semaphore Azure OpenAI pattern from gemma2b/create_preference_data.py (AsyncAzureOpenAI
+client, load_dotenv, asyncio.Semaphore for concurrency, gather-based batching) — don't
+reinvent it. Note: there is no shared/ directory yet in this repo, you'll need to
+create it (with an __init__.py to match gemma2b/ and slm125m/ conventions).
+
+DECIDED: shared/ is where all reusable code lives from now on. As part of this stage,
+hoist the reusable pieces into shared/ modules instead of importing across the
+gemma2b/ and slm125m/ packages: the Azure async-client setup (shared/azure_client.py
+or similar), and the training helpers — _tokenize_chat + IGNORE_INDEX loss-masking
+from gemma2b/finetune_local.py, get_device() from slm125m/train_dpo.py, and a single
+full-parameter training loop for the 125M model (shared/train_utils.py). Later stages
+(train_raft.py in particular) reuse these same modules, so write them once here.
+Leave the existing gemma2b/ and slm125m/ scripts working as they are — don't refactor
+them in this stage, just don't duplicate their logic into shared/.
+
+Generate ~2,000 diverse instruction-response pairs via Azure GPT. DECIDED: keep the
+legal/financial assistant persona from create_preference_data.py — that IS our use
+case, don't broaden into generic coding/trivia. "Diverse" means diverse TASK TYPES
+within the domain, not diverse domains: extractive QA (what we already have), plus
+summarization of contracts/filings, drafting (clauses, client emails, memos),
+extraction into structured formats (tables, JSON), multi-step reasoning over
+financial statements, and comparison/analysis tasks. Seed prompts from the existing
+SFT user prompts and generate fresh synthetic in-domain instructions on top.
+
+Output format must match data/sft_train.jsonl exactly — same chat-messages JSONL,
+one JSON object per line:
+  {"messages": [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]}
+Write it to data/instruction_train.jsonl.
+
+Same quality bar as the preference data pipeline: run an LLM-judge validation pass
+(judge model scores/approves the response quality, same swap-to-reduce-position-bias
+trick as judge_pair in create_preference_data.py) and deduplicate by prompt text
+(lowercased/stripped) before writing. Filter obvious junk (too short, empty, refusal
+boilerplate).
+
+Multiple Azure API keys in parallel is the point — keep concurrency configurable via
+--concurrency like the existing script (default something reasonable, 20-50), and
+support --n-samples, --seed, --output, --append the same way create_preference_data.py
+does, so the CLI feels consistent with what's already there.
+
+Makefile target: create-instruction-data, invoked as
+  make create-instruction-data ARGS="--n-samples 2000"
+Mirror the existing create-preference-data target style (python -m shared.create_instruction_data $(ARGS)).
+
+TRAINING
+
+Write shared/instruction_tune.py — this needs to be generic across both model sizes,
+taking --model, --data, --output flags. Auto-detect which training mode to use by
+counting model parameters: full-parameter fine-tuning for the 125M model, QLoRA
+(same LoraConfig/BitsAndBytesConfig approach as gemma2b/finetune_local.py) for Gemma 2B.
+Reuse the loss-masking / chat-template tokenization logic from finetune_local.py
+(_tokenize_chat, IGNORE_INDEX from gemma2b/config.py) rather than rewriting it —
+same Gemma <start_of_turn>/<end_of_turn> handling applies to both models since we're
+using the same chat-messages format.
+
+Device handling: same auto-detect as slm125m/train_dpo.py's get_device() — check
+--device override, then CUDA, then MPS (torch.backends.mps.is_available()), then CPU.
+This all needs to run locally on MPS on my Mac; Modal is optional/secondary here, don't
+block on it.
+
+Hyperparams — keep these conservative, we're doing continued fine-tuning and I don't
+want to blow away the QA knowledge from Stage 01:
+  - 2-3 epochs only
+  - LR 1e-5 for the 125M full-parameter run
+  - LR 2e-5 for the Gemma 2B QLoRA run
+  - Reasonable defaults for batch-size/grad-accum matching finetune_local.py's pattern
+    (small batch + grad accumulation for MPS memory limits)
+
+Makefile targets:
+  make instruction-tune-125m   -> python -m shared.instruction_tune --model models/slm125m/base --data data/instruction_train.jsonl --output models/slm125m/instruction
+  make instruction-tune-gemma  -> python -m shared.instruction_tune --model models/sft_local/merged --data data/instruction_train.jsonl --output models/instruction_local/adapter (then merge to models/instruction_local/merged, reuse gemma2b/merge_adapter.py — add a merge-instruction target or just call merge_adapter.py directly with --adapter models/instruction_local/adapter --output models/instruction_local/merged --base models/base)
+
+Outputs I expect to see on disk when this is done:
+  - models/slm125m/instruction/          (full model, not an adapter)
+  - models/instruction_local/adapter/    (QLoRA adapter)
+  - models/instruction_local/merged/     (merged into base, ready to chat/convert)
+
+ACCEPTANCE CHECKS
+- data/instruction_train.jsonl has ~2,000 lines, valid JSON per line, matches the
+  messages schema above, no duplicate prompts, spans multiple task types (not just
+  legal QA) — spot check 10-15 lines by eye.
+- Both instruction-tuned checkpoints load and respond sensibly to at least: one
+  legal/financial QA prompt (should NOT have regressed vs the Stage 01 SFT model),
+  one contract/filing summarization prompt, one drafting prompt, and one multi-step
+  reasoning prompt over a financial statement — all in-domain task types.
+- Whole thing (2,000-sample data gen + both trainings) needs to fit in a live-lecture
+  time budget — same constraint as the RLAIF work. If Gemma QLoRA training is going to
+  blow past that on MPS, tell me before you run it so we can decide on Modal instead.
+- Don't touch gemma2b/create_preference_data.py or slm125m/train_dpo.py in this stage —
+  those get re-pointed at the instruction-tuned checkpoints in the next stage (RLAIF/DPO
+  proper), not this one.
