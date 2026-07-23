@@ -16,6 +16,7 @@ import os
 import torch
 from datasets import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import EarlyStoppingCallback
 from trl import DPOConfig, DPOTrainer
 
 
@@ -47,11 +48,12 @@ def main():
     parser.add_argument("--model", type=str, default="models/slm125m/base")
     parser.add_argument("--data", type=str, default="data/preference_train.jsonl")
     parser.add_argument("--output", type=str, default="models/slm125m/dpo")
-    parser.add_argument("--epochs", type=int, default=2)
+    parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--grad-accum", type=int, default=2)
-    parser.add_argument("--lr", type=float, default=5e-5)
-    parser.add_argument("--beta", type=float, default=0.1)
+    parser.add_argument("--lr", type=float, default=1e-5)
+    parser.add_argument("--beta", type=float, default=0.3)
+    parser.add_argument("--eval-split", type=float, default=0.1)
     parser.add_argument("--max-length", type=int, default=512)
     parser.add_argument("--device", type=str, default=None)
     args = parser.parse_args()
@@ -75,8 +77,12 @@ def main():
     total = sum(p.numel() for p in model.parameters())
     print(f"Parameters: {total:,} (full fine-tuning)")
 
-    dataset = load_preference_data(args.data)
-    print(f"Loaded {len(dataset)} preference pairs")
+    full_dataset = load_preference_data(args.data)
+    split = full_dataset.train_test_split(test_size=args.eval_split, seed=42)
+    dataset = split["train"]
+    eval_dataset = split["test"]
+    print(f"Loaded {len(full_dataset)} preference pairs "
+          f"(train={len(dataset)}, eval={len(eval_dataset)})")
 
     training_args = DPOConfig(
         output_dir=args.output,
@@ -88,7 +94,14 @@ def main():
         max_length=args.max_length,
         precompute_ref_log_probs=True,
         logging_steps=10,
-        save_strategy="epoch",
+        eval_strategy="steps",
+        eval_steps=50,
+        save_strategy="steps",
+        save_steps=50,
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
+        save_total_limit=3,
         remove_unused_columns=False,
         bf16=False,
         fp16=False,
@@ -103,7 +116,9 @@ def main():
         model=model,
         args=training_args,
         train_dataset=dataset,
+        eval_dataset=eval_dataset,
         processing_class=tokenizer,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
     )
 
     print(f"\nStarting DPO training: {args.epochs} epoch(s), "

@@ -1,6 +1,6 @@
 ---
 library_name: transformers
-model_name: dpo
+model_name: rlaif
 tags:
 - generated_from_trainer
 - dpo
@@ -8,7 +8,7 @@ tags:
 licence: license
 ---
 
-# Model Card for dpo
+# Model Card for rlaif
 
 This model is a fine-tuned version of [None](https://huggingface.co/None).
 It has been trained using [TRL](https://github.com/huggingface/trl).

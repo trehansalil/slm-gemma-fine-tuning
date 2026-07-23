@@ -35,7 +35,7 @@ import torch
 from datasets import Dataset
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from transformers import (AutoConfig, AutoModelForCausalLM, AutoTokenizer,
-                          BitsAndBytesConfig)
+                          BitsAndBytesConfig, EarlyStoppingCallback)
 from trl import DPOConfig, DPOTrainer
 
 from shared.train_utils import MAX_SEQ_LEN, get_device
@@ -46,7 +46,7 @@ from shared.train_utils import MAX_SEQ_LEN, get_device
 FULL_FINETUNE_MAX_PARAMS = 500_000_000
 
 MODE_DEFAULTS = {
-    "full":  {"lr": 5e-7, "batch_size": 4, "grad_accum": 4},
+    "full":  {"lr": 2e-5, "batch_size": 4, "grad_accum": 8},
     "qlora": {"lr": 1e-6, "batch_size": 1, "grad_accum": 8},
 }
 
@@ -106,7 +106,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--lr", type=float, default=None,
                         help="Override mode default (full: 5e-7, qlora: 1e-6)")
-    parser.add_argument("--beta", type=float, default=0.1,
+    parser.add_argument("--beta", type=float, default=0.3,
                         help="DPO beta / implicit reward temperature")
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--grad-accum", type=int, default=None)
@@ -231,8 +231,14 @@ def main():
         max_length=args.max_length,
         precompute_ref_log_probs=args.precompute_ref,
         logging_steps=args.log_every,
-        save_strategy=save_strategy,
-        eval_strategy="epoch" if eval_dataset is not None else "no",
+        save_strategy="steps" if eval_dataset is not None else save_strategy,
+        save_steps=50,
+        eval_strategy="steps" if eval_dataset is not None else "no",
+        eval_steps=50,
+        load_best_model_at_end=eval_dataset is not None,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
+        save_total_limit=3,
         remove_unused_columns=False,
         bf16=False,
         fp16=False,
@@ -244,6 +250,10 @@ def main():
         seed=args.seed,
     )
 
+    callbacks = []
+    if eval_dataset is not None:
+        callbacks.append(EarlyStoppingCallback(early_stopping_patience=3))
+
     trainer = DPOTrainer(
         model=model,
         ref_model=ref_model,
@@ -251,6 +261,7 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         processing_class=tokenizer,
+        callbacks=callbacks,
     )
 
     # ----- Train -----------------------------------------------------------
