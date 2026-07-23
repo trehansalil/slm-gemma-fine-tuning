@@ -33,6 +33,7 @@
         extend-and-train-slm125m \
         create-instruction-data instruction-tune-125m instruction-tune-gemma \
         merge-instruction \
+        bench-kv-cache bench-speculative deploy-inference frontend-dev \
         ARGS
 
 # Directories
@@ -219,7 +220,7 @@ download-slm125m: ## Download thesreedath/slm-125m-qa → models/slm125m/base/
 # --lr            (default=5e-5) Learning rate
 # --beta          (default=0.1)  DPO beta
 train-dpo-slm125m: ## DPO fine-tune SLM 125M on preference data (from instruction-tuned checkpoint)
-	python -m slm125m.train_dpo --model $(SLM125M_INSTR) --output $(SLM125M_DPO) $(ARGS)
+	.venv/bin/python -m slm125m.train_dpo --model $(SLM125M_INSTR) --output $(SLM125M_DPO) $(ARGS)
 
 # Usage: make pipeline-rlaif
 # Args: none
@@ -329,3 +330,23 @@ instruction-tune-gemma: ## Instruction-tune Gemma 2B (QLoRA) → models/instruct
 # so Stage 01 SFT knowledge is preserved in the merge.
 merge-instruction: ## Merge instruction adapter → models/instruction_local/merged/
 	python gemma2b/merge_adapter.py --adapter $(INSTR_ADAPTER) --output $(INSTR_MERGED) --base $(LOCAL_MERGED) $(ARGS)
+
+# ═══════════════════════════════════════════════════════════════
+# Inference Benchmarks
+# ═══════════════════════════════════════════════════════════════
+
+# Usage: make bench-kv-cache [ARGS="--batch-sizes 1 2 4 8 16"]
+bench-kv-cache: ## KV cache benchmark on SLM 125M (local)
+	python -m inference.kv_cache_benchmark --model $(SLM125M_BASE) $(ARGS)
+
+# Usage: make bench-speculative [ARGS="--gamma 4 --max-new-tokens 128"]
+bench-speculative: ## Speculative decoding benchmark: Qwen 7B target + 0.5B draft (local)
+	python -m inference.speculative_decoding $(ARGS)
+
+# Usage: make deploy-inference
+deploy-inference: ## Deploy inference benchmarks to Modal
+	modal deploy inference/api.py
+
+# Usage: make frontend-dev
+frontend-dev: ## Start frontend dev server
+	cd frontend && npm run dev
