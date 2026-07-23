@@ -1,0 +1,19 @@
+I want to create a comparison between cases where I have KV cache and I don't have KV cache, using the 125 million SLM model that we have created earlier. 
+
+The purpose here is to actually see the speed difference in the case where I have KV cache and where I don't have KV cache. 
+
+To amplify this difference, give me an option to increase the batch size so that when the batch size is increasing, at one point I will have to manage a lot of users. This means the difference between with KV cache and without KV cache can be amplified. 
+
+In KV cache, also produce and display the final output, but also show the difference in tokens per second. 
+
+1. Inference speed with and without KV cache - 125M SL
+
+2. Output speed with and without speculative decoding - target model (Qwen 2.5- 7B) and draft model (Qwen 2.5- 0.5B)
+
+I also want to set up an inference pipeline where I can do inference on two models. Let's say a QWEN 2.5 7B model and a QWEN 2.5 0.5B model. The bigger model will act as the target model, and the smaller model will act as the draft model. What I am interested in seeing is what the speed difference is in terms of tokens per second in both of these cases. 
+
+Setup the inference in modal and display it on the frontend on vercel
+
+In speculative decoding, I am also interested to see the output produced by the target model and show which tokens were produced by the target model and which tokens were produced by the draft model but accepted by the target model. I want to see a percentage score of acceptance of tokens. 
+
+And I want you to display the result along with the token output, throughput speed in terms of tokens per second. 
