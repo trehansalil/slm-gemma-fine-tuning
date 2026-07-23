@@ -76,7 +76,7 @@ def main():
 
     # Load model
     use_bnb = device.type == "cuda"
-    attn_impl = "eager" if device.type == "mps" else None
+    attn_impl = "eager" if device.type == "mps" else "sdpa"
 
     if use_bnb:
         bnb_config = BitsAndBytesConfig(

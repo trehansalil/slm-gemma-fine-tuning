@@ -21,5 +21,8 @@ dependencies = [
     "python-dotenv",
 ]
 
+[project.optional-dependencies]
+apple = ["mlx>=0.22", "mlx-lm>=0.22"]
+
 [tool.setuptools.packages.find]
 include = ["gemma2b*", "slm125m*", "shared*"]

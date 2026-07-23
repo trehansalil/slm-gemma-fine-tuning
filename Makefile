@@ -30,7 +30,7 @@
         create-preference-data create-preference-interactive train-dpo-gemma \
         download-slm125m train-dpo-slm125m \
         pipeline-rlaif pipeline-rlaif-interactive \
-        extend-and-train-slm125m \
+        extend-and-train-slm125m raft-dpo-slm125m \
         create-instruction-data instruction-tune-125m instruction-tune-gemma \
         merge-instruction \
         bench-kv-cache bench-speculative deploy-inference frontend-dev \
@@ -187,6 +187,7 @@ SLM125M_BASE    := $(MODELS)/slm125m/base
 SLM125M_DPO     := $(MODELS)/slm125m/dpo
 SLM125M_RLAIF   := $(MODELS)/slm125m/rlaif
 SLM125M_RAFT    := $(MODELS)/slm125m/raft
+SLM125M_RAFT_DPO := $(MODELS)/slm125m/raft_dpo
 RAFT_DATA       := data/raft_train.jsonl
 DPO_LOCAL       := $(MODELS)/dpo_local/adapter
 
@@ -290,6 +291,19 @@ raft-slm125m: ## RAFT training on RLAIF-tuned SLM 125M with 18k RAFT examples
 		--model $(SLM125M_RLAIF) \
 		--data $(RAFT_DATA) \
 		--output $(SLM125M_RAFT) \
+		$(ARGS)
+
+# Usage: make raft-dpo-slm125m [ARGS="--epochs 2 --beta 0.1"]
+# Args:
+# --epochs        (default=1)    Training epochs
+# --beta          (default=0.1)  DPO beta / implicit reward temperature
+# --lr            (default=5e-6) Learning rate (lower than DPO — continued tuning)
+# --eval-split    (default=0.05) Fraction of data for evaluation
+raft-dpo-slm125m: ## RAFT training on DPO-tuned SLM 125M with 18k RAFT examples
+	.venv/bin/python -m slm125m.train_raft \
+		--model $(SLM125M_DPO) \
+		--data $(RAFT_DATA) \
+		--output $(SLM125M_RAFT_DPO) \
 		$(ARGS)
 
 # ── Stage 02: Instruction Tuning ─────────────────────────────────────────────

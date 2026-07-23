@@ -38,7 +38,7 @@ from transformers import (AutoConfig, AutoModelForCausalLM, AutoTokenizer,
                           BitsAndBytesConfig, EarlyStoppingCallback)
 from trl import DPOConfig, DPOTrainer
 
-from shared.train_utils import MAX_SEQ_LEN, get_device
+from shared.train_utils import MAX_SEQ_LEN, get_attn_impl, get_device
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -145,7 +145,7 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "left"  # DPO left-pads for generation alignment
 
-    attn_impl = "eager" if device.type == "mps" else None
+    attn_impl = get_attn_impl(device)
 
     # ----- Load policy model -----------------------------------------------
     if mode == "full":
@@ -240,14 +240,16 @@ def main():
         greater_is_better=False,
         save_total_limit=3,
         remove_unused_columns=False,
-        bf16=False,
-        fp16=False,
+        bf16=(device.type == "cuda"),
+        fp16=(device.type == "mps"),
         gradient_checkpointing=mode == "qlora",
         report_to="none",
         optim="adamw_torch",
         warmup_ratio=0.1,
         lr_scheduler_type="cosine",
         seed=args.seed,
+        dataloader_num_workers=2,
+        dataloader_prefetch_factor=2,
     )
 
     callbacks = []

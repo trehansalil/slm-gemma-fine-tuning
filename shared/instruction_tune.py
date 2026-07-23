@@ -23,7 +23,8 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from transformers import (AutoConfig, AutoModelForCausalLM, AutoTokenizer,
                           BitsAndBytesConfig)
 
-from shared.train_utils import (MAX_SEQ_LEN, detect_chat_format, get_device,
+from shared.train_utils import (MAX_SEQ_LEN, detect_chat_format, get_attn_impl,
+                                get_device, get_dtype, maybe_compile,
                                 tokenize_examples, train)
 
 FULL_FINETUNE_MAX_PARAMS = 500_000_000
@@ -91,14 +92,16 @@ def main():
         raise SystemExit(f"{args.model}: {e}")
     print(f"Chat format: {chat_format}")
 
-    attn_impl = "eager" if device.type == "mps" else None
+    dtype = get_dtype(device)
+    attn_impl = get_attn_impl(device)
 
     if mode == "full":
         model = AutoModelForCausalLM.from_pretrained(
             args.model,
-            torch_dtype=torch.float32,
+            torch_dtype=dtype,
             attn_implementation=attn_impl,
         )
+        model = maybe_compile(model, device)
     else:
         use_bnb = device.type == "cuda"
         if use_bnb:
@@ -118,7 +121,7 @@ def main():
         else:
             model = AutoModelForCausalLM.from_pretrained(
                 args.model,
-                torch_dtype=torch.float32,
+                torch_dtype=dtype,
                 attn_implementation=attn_impl,
             )
 

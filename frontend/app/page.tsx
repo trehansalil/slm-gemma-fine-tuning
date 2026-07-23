@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 
-const KV_CACHE_URL =
-  process.env.NEXT_PUBLIC_KV_CACHE_URL || "";
-const SPEC_DECODING_URL =
-  process.env.NEXT_PUBLIC_SPEC_DECODING_URL || "";
+const KV_CACHE_URL = "/api/kv-cache";
+const SPEC_DECODING_URL = "/api/speculative-decoding";
 
 // ── Types ──────────────────────────────────────────────────
 interface KvModeResult {

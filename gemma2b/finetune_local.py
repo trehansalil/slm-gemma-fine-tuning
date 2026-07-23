@@ -268,7 +268,7 @@ def main():
             start_epoch = latest_epoch
 
     use_bnb = device.type == "cuda"
-    attn_impl = "eager" if device.type == "mps" else None
+    attn_impl = "eager" if device.type == "mps" else "sdpa"
 
     if resume_path and os.path.exists(resume_path):
         print(f"Resuming from {resume_path}...")

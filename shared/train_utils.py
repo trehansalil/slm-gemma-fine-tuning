@@ -31,6 +31,30 @@ def get_device(requested: str | None = None) -> torch.device:
     return torch.device("cpu")
 
 
+def get_dtype(device: torch.device) -> torch.dtype:
+    if device.type == "mps":
+        return torch.float16
+    if device.type == "cuda":
+        return torch.bfloat16
+    return torch.float32
+
+
+def get_attn_impl(device: torch.device) -> str:
+    if device.type == "mps":
+        return "eager"
+    return "sdpa"
+
+
+def maybe_compile(model, device: torch.device):
+    # MPS torch.compile (aot_eager) is experimental and can conflict with fp16
+    try:
+        if device.type == "cuda":
+            return torch.compile(model)
+    except Exception:
+        pass
+    return model
+
+
 def _real_token_id(tokenizer, token: str) -> int | None:
     """Token id, or None if the token is absent / maps to unk."""
     tid = tokenizer.convert_tokens_to_ids(token)
@@ -207,10 +231,13 @@ def collate_fn(batch, pad_id=0):
 def evaluate(model, val_dl, device):
     model.eval()
     total_loss = total_count = 0
+    amp_dtype = get_dtype(device)
+    use_amp = device.type in ("mps", "cuda")
     with torch.no_grad():
         for ids, labs, mask in val_dl:
             ids, labs, mask = ids.to(device), labs.to(device), mask.to(device)
-            loss = model(input_ids=ids, attention_mask=mask, labels=labs).loss
+            with torch.autocast(device.type, dtype=amp_dtype, enabled=use_amp):
+                loss = model(input_ids=ids, attention_mask=mask, labels=labs).loss
             total_loss += loss.item() * ids.size(0)
             total_count += ids.size(0)
     model.train()
@@ -240,16 +267,18 @@ def train(model, tokenizer, features, output_dir, device, *,
     )
     print(f"Train: {train_size}, Val: {val_size}")
 
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
     collate = partial(collate_fn, pad_id=pad_id)
+    dl_kwargs = dict(num_workers=2, persistent_workers=True, prefetch_factor=2)
     train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True,
-                          num_workers=0, pin_memory=False, drop_last=True,
-                          collate_fn=collate)
+                          drop_last=True, collate_fn=collate, **dl_kwargs)
     val_dl = DataLoader(val_ds, batch_size=batch_size * 2, shuffle=False,
-                        num_workers=0, pin_memory=False, collate_fn=collate)
+                        collate_fn=collate, **dl_kwargs)
 
     optimizer = torch.optim.AdamW(
         [p for p in model.parameters() if p.requires_grad],
         lr=lr, betas=(0.9, 0.95), weight_decay=weight_decay,
+        foreach=True,
     )
 
     steps_per_epoch = max(1, len(train_dl) // grad_accum)
@@ -267,20 +296,24 @@ def train(model, tokenizer, features, output_dir, device, *,
 
     best_val_loss = float("inf")
     step = micro = 0
-    running_loss = 0.0
+    running_loss = torch.tensor(0.0, device=device)
     t0 = t_global = time.time()
     model.train()
 
+    amp_dtype = get_dtype(device)
+    use_amp = device.type in ("mps", "cuda")
+
     for epoch in range(1, epochs + 1):
-        epoch_train_loss = 0.0
+        epoch_train_loss = torch.tensor(0.0, device=device)
         epoch_train_steps = 0
 
         for ids, labs, mask in train_dl:
             ids, labs, mask = ids.to(device), labs.to(device), mask.to(device)
-            loss = model(input_ids=ids, attention_mask=mask, labels=labs).loss / grad_accum
+            with torch.autocast(device.type, dtype=amp_dtype, enabled=use_amp):
+                loss = model(input_ids=ids, attention_mask=mask, labels=labs).loss / grad_accum
             loss.backward()
-            running_loss += loss.item()
-            epoch_train_loss += loss.item()
+            running_loss += loss.detach()
+            epoch_train_loss += loss.detach()
             micro += 1
 
             if micro % grad_accum != 0:
@@ -291,12 +324,12 @@ def train(model, tokenizer, features, output_dir, device, *,
             for pg in optimizer.param_groups:
                 pg["lr"] = current_lr
             optimizer.step()
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             step += 1
             epoch_train_steps += 1
 
             if step % log_every == 0:
-                avg = running_loss / log_every
+                avg = running_loss.item() / log_every
                 sec_per_step = (time.time() - t0) / log_every
                 print(f"step {step:>5}/{total_steps} | train_loss {avg:.4f} | "
                       f"lr {current_lr:.2e} | {sec_per_step:.2f}s/step | "
@@ -305,7 +338,7 @@ def train(model, tokenizer, features, output_dir, device, *,
                                      "train_loss": round(avg, 4),
                                      "lr": current_lr}) + "\n")
                 mf.flush()
-                running_loss = 0.0
+                running_loss.zero_()
                 t0 = time.time()
 
             if eval_every and step % eval_every == 0:
@@ -327,7 +360,7 @@ def train(model, tokenizer, features, output_dir, device, *,
                 model.train()
                 t0 = time.time()
 
-        avg_train_loss = epoch_train_loss / max(1, epoch_train_steps)
+        avg_train_loss = epoch_train_loss.item() / max(1, epoch_train_steps)
         vl = evaluate(model, val_dl, device)
         ppl = math.exp(min(vl, 20))
         improving = "+" if vl < best_val_loss else "-"
